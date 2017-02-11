@@ -12,7 +12,9 @@ import pstats
 from django.conf import settings
 
 
-class ProfilerMiddleware(object):
+import django.utils.deprecation
+
+class ProfilerMiddleware(django.utils.deprecation.MiddlewareMixin):
     """
     Simple profile middleware to profile django views. To run it, add ?prof to
     the URL like this:
