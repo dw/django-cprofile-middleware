@@ -14,6 +14,9 @@ from django.conf import settings
 
 import django.utils.deprecation
 
+UNDEFINED = object()
+
+
 class ProfilerMiddleware(django.utils.deprecation.MiddlewareMixin):
     """
     Simple profile middleware to profile django views. To run it, add ?prof to
@@ -33,8 +36,13 @@ class ProfilerMiddleware(django.utils.deprecation.MiddlewareMixin):
     http://www.slideshare.net/zeeg/django-con-high-performance-django-presentation.
     """
     def can(self, request):
-        return settings.DEBUG and 'prof' in request.GET and \
-            request.user is not None and request.user.is_staff
+        key = getattr(settings, 'CPROFILE_KEY', UNDEFINED)
+        return (request.GET.get('prof') == key) or (
+            settings.DEBUG and
+            'prof' in request.GET and
+            request.user is not None and
+            request.user.is_staff
+        )
 
     def process_view(self, request, callback, callback_args, callback_kwargs):
         if self.can(request):
@@ -52,7 +60,7 @@ class ProfilerMiddleware(django.utils.deprecation.MiddlewareMixin):
             self.profiler.create_stats()
             io = StringIO()
             stats = pstats.Stats(self.profiler, stream=io)
-            stats.strip_dirs().sort_stats(request.GET.get('sort', 'time'))
+            stats.strip_dirs().sort_stats(request.GET.get('sort', 'cumulative'))
             stats.print_stats(int(request.GET.get('count', 100)))
             response.content = '<pre>%s</pre>' % io.getvalue()
         return response
